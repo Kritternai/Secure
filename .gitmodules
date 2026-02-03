@@ -1,0 +1,6 @@
+[submodule "mutillidae"]
+	path = mutillidae
+	url = https://github.com/Kritternai/mutillidae.git
+[submodule "mutillidae-dockerhub"]
+	path = mutillidae-dockerhub
+	url = https://github.com/Kritternai/mutillidae-dockerhub.git
