@@ -1,0 +1,7 @@
+FROM osixia/phpldapadmin:latest
+
+ENV PHPLDAPADMIN_LDAP_HOSTS=directory
+ENV PHPLDAPADMIN_HTTPS=false
+
+EXPOSE 80
+

@@ -1,0 +1,82 @@
+# Documentation: https://github.com/compose-spec/compose-spec/blob/master/spec.md
+# Purpose: Build local containers for the Mutillidae environment
+
+services:
+  database:
+    container_name: database
+    image: docker.io/webpwnized/mutillidae:database
+    platform: linux/amd64  # For Mac M2 compatibility
+    networks:
+      - datanet   
+
+  database_admin:
+    container_name: database_admin
+    depends_on:
+      - database
+    image: docker.io/webpwnized/mutillidae:database_admin
+    platform: linux/amd64  # For Mac M2 compatibility
+    ports:
+      - 127.0.0.1:81:80
+    networks:
+      - datanet   
+
+  www:
+    container_name: www
+    depends_on:
+      - database
+      - directory
+    image: docker.io/webpwnized/mutillidae:www
+    platform: linux/amd64  # For Mac M2 compatibility
+    ports:
+      - 127.0.0.1:80:80
+      - 127.0.0.1:443:443
+    networks:
+      - datanet
+      - ldapnet
+
+  directory:
+    container_name: directory
+    image: docker.io/webpwnized/mutillidae:ldap
+    platform: linux/amd64  # For Mac M2 compatibility
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    ports:
+      - 127.0.0.1:389:389
+    networks:
+      - ldapnet
+
+  directory_admin:
+    container_name: directory_admin
+    depends_on:
+      - directory
+    image: docker.io/webpwnized/mutillidae:ldap_admin
+    platform: linux/amd64  # For Mac M2 compatibility
+    ports:
+      - 127.0.0.1:82:80
+    networks:
+      - ldapnet
+
+  # Kali Linux GUI (Browser Mode) for Penetration Testing
+  kali-gui:
+    container_name: attacker-kali
+    image: kasmweb/kali-rolling-desktop:1.14.0
+    ports:
+      - "6901:6901"  # Port for Browser-based GUI access
+    environment:
+      - VNC_PW=password
+      - KASM_USER=kasm_user
+      - KASM_PASSWORD=password
+    shm_size: '512m'  # Increase shared memory for better GUI performance
+    networks:
+      - datanet
+      - ldapnet
+    restart: unless-stopped
+
+volumes:
+  ldap_data:
+  ldap_config:
+
+networks:
+  datanet:
+  ldapnet:

@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  database:
+    container_name: database
+    build:
+      context: .
+      dockerfile: Dockerfile.database
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: mutillidae
+      MYSQL_DATABASE: mutillidae
+      MYSQL_USER: mutillidae
+      MYSQL_PASSWORD: mutillidae
+    networks:
+      - datanet
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmutillidae"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  database_admin:
+    container_name: database_admin
+    build:
+      context: .
+      dockerfile: Dockerfile.database_admin
+    platform: linux/amd64
+    depends_on:
+      - database
+    ports:
+      - "127.0.0.1:81:80"
+    environment:
+      PMA_HOST: database
+      PMA_USER: root
+      PMA_PASSWORD: mutillidae
+      UPLOAD_LIMIT: 300M
+    networks:
+      - datanet
+    restart: unless-stopped
+
+  directory:
+    container_name: directory
+    build:
+      context: .
+      dockerfile: Dockerfile.directory
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:389:389"
+    environment:
+      LDAP_ORGANISATION: "Mutillidae"
+      LDAP_DOMAIN: "mutillidae.localhost"
+      LDAP_ADMIN_PASSWORD: mutillidae
+      LDAP_CONFIG_ADMIN_PASSWORD: mutillidae
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    networks:
+      - ldapnet
+    restart: unless-stopped
+
+  directory_admin:
+    container_name: directory_admin
+    build:
+      context: .
+      dockerfile: Dockerfile.directory_admin
+    platform: linux/amd64
+    depends_on:
+      - directory
+    ports:
+      - "127.0.0.1:82:80"
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: directory
+      PHPLDAPADMIN_HTTPS: "false"
+    networks:
+      - ldapnet
+    restart: unless-stopped
+
+  www:
+    container_name: www
+    build:
+      context: .
+      dockerfile: Dockerfile.www
+    platform: linux/amd64  
+    depends_on:
+      database:
+        condition: service_healthy
+      directory:
+        condition: service_started
+    ports:
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - datanet
+      - ldapnet
+      - pentest-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kali Linux GUI (Browser Mode) for Penetration Testing
+  kali-gui:
+    container_name: attacker-kali
+    image: kasmweb/kali-rolling-desktop:1.14.0
+    ports:
+      - "6901:6901"  # HTTPS only: https://localhost:6901
+    environment:
+      - VNC_PW=password
+      - KASM_USER=kasm_user
+      - KASM_PASSWORD=password
+    shm_size: '512m'
+    networks:
+      - datanet
+      - ldapnet
+      - pentest-net
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  ldap_data:
+  ldap_config:
+
+networks:
+  datanet:
+    driver: bridge
+  ldapnet:
+    driver: bridge
+  pentest-net:
+    external: true
+

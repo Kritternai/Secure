@@ -1,0 +1,9 @@
+FROM phpmyadmin/phpmyadmin:latest
+
+ENV PMA_HOST=database
+ENV PMA_USER=root
+ENV PMA_PASSWORD=mutillidae
+ENV UPLOAD_LIMIT=300M
+
+EXPOSE 80
+
