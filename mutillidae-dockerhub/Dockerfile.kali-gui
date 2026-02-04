@@ -1,0 +1,3 @@
+FROM kasmweb/kali-rolling-desktop:1.14.0
+USER root
+RUN echo "kritternai ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers

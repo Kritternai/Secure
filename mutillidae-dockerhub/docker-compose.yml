@@ -60,12 +60,14 @@ services:
   # Kali Linux GUI (Browser Mode) for Penetration Testing
   kali-gui:
     container_name: attacker-kali
-    image: kasmweb/kali-rolling-desktop:1.14.0
+    build:
+      context: .
+      dockerfile: Dockerfile.kali-gui
     ports:
       - "6901:6901"  # Port for Browser-based GUI access
     environment:
       - VNC_PW=password
-      - KASM_USER=kasm_user
+      - KASM_USER=Kritternai
       - KASM_PASSWORD=password
     shm_size: '512m'  # Increase shared memory for better GUI performance
     networks:
